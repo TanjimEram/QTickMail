@@ -1,0 +1,70 @@
+var FOLDER_ID = "Drive link where the QR is to be stored.";
+var WEB_APP_URL = "Create a deployment and paste the web app url here.";
+
+
+/**
+ * RUN THIS MANUALLY to create the QR codes.
+ * Make sure the "generateQRCodes" function is selected in the toolbar before clicking Run.
+ */
+function generateQRCodes() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheets()[0]; // Gets the very first tab
+  var data = sheet.getDataRange().getValues();
+ 
+  try {
+    var folder = DriveApp.getFolderById(FOLDER_ID);
+  } catch (err) {
+    throw "Error: Folder ID is incorrect. Please check the ID in the code.";
+  }
+ 
+  if (!WEB_APP_URL || WEB_APP_URL.includes("PASTE_YOUR")) {
+    throw "Error: You forgot to paste your Web App URL into the code!";
+  }
+
+
+  for (var i = 1; i < data.length; i++) {
+    var teamName = data[i][0];  
+    var leaderName = data[i][1];
+   
+    if (!teamName) continue; // Skip empty rows
+
+
+    var qrContent = WEB_APP_URL + "?team=" + encodeURIComponent(teamName) + "&leader=" + encodeURIComponent(leaderName);
+    var qrUrl = "https://quickchart.io/qr?text=" + encodeURIComponent(qrContent) + "&size=300";
+   
+    var response = UrlFetchApp.fetch(qrUrl);
+    var fileName = teamName + " - " + leaderName + ".png";
+    folder.createFile(response.getBlob()).setName(fileName);
+   
+    Logger.log("Created: " + fileName);
+  }
+  Logger.log("FINISHED: All files are in your Drive folder.");
+}
+
+
+
+
+function doGet(e) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var attendanceSheet = ss.getSheetByName("Attendance");
+ 
+  if (!attendanceSheet) {
+    return ContentService.createTextOutput("Error: Create a tab named 'Attendance' in your sheet first!");
+  }
+
+
+  var team = e.parameter.team;
+  var leader = e.parameter.leader;
+
+
+  if (!team || !leader) {
+    return ContentService.createTextOutput("Error: No team/leader data found in scan.");
+  }
+
+
+  // Record data
+  attendanceSheet.appendRow([new Date(), team, leader]);
+
+
+  return ContentService.createTextOutput("SUCCESS! " + team + " has been checked in.");
+}
