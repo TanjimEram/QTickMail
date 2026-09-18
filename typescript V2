@@ -1,10 +1,10 @@
 /*** MARXCELLENCE 2026 — TICKETS + CHECK-IN + ROUND-1 CASE DROP (W1 + W2 + CASE) ***/
 
 // ============ PER-ACCOUNT CONFIG — the ONLY block you change per account ============
-const ACCOUNT_LABEL   = 'C';    // 'A' main · 'B' nsumibc.marxcellence@gmail.com · 'C' tanjim.eram@northsouth.edu
+const ACCOUNT_LABEL   = 'C';    // one letter per sending account, e.g. 'A' main · 'B' club Gmail · 'C' university account
 const RANGE_START     = 2;      // W2: scan ALL rows (YES-in-P filter selects the semifinalists)
 const RANGE_END       = 0;      // last data row (inclusive); 0 = to the very end
-const SPREADSHEET_ID  = '1tFR_31tifHNXJJbp0d3sVfO5o7FcBCPDuGYvtikXMsw';
+const SPREADSHEET_ID  = '';     // empty = the spreadsheet this script is bound to; or paste a sheet ID
 const DAILY_CAP       = 200;   // free gmail: 100 · .edu/Workspace: 1400  (counts RECIPIENTS, incl. bcc)
 const MAX_PER_RUN     = 200;    // max SEND CALLS (teams) per run — LOWER to ~40 if generating PDFs on the fly
 const MAX_GEN_PER_RUN = 30;
@@ -12,8 +12,8 @@ const PDF_LOOKUP      = false;  // false = may generate PDFs · true = send-only
 // =====================================================================================
 
 const SHEET_NAME   = 'Sheet1';
-const FOLDER_ID    = '1qOeZJbioe4tK0TDCwnaAWCZOp5bmMRt-';
-const WEBAPP_URL   = 'https://script.google.com/macros/s/AKfycbw4pjQpAuQCZS7ovQ7OubcCK-8rfWA7waoXLXbSGpaMFqI-Lw6AOGyKALyz22mMg-tU9g/exec';
+const FOLDER_ID    = 'PASTE_YOUR_DRIVE_FOLDER_ID';
+const WEBAPP_URL   = 'PASTE_YOUR_WEB_APP_URL';
 
 const COL_TEAM = 1, COL_LEADER = 2, COL_EMAIL = 3;
 const COL_M2_EMAIL = 6, COL_M3_EMAIL = 9, COL_M4_EMAIL = 12;   // F, I, L
@@ -26,7 +26,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // ---- WORKSHOP PRESETS ----
 const W1 = {
   code:'W1',
-  templateId:'1e4QiheM7aQ7mrWYNXSyGhgqgiOrX-_ZU5ozbuURbG1I',
+  templateId:'PASTE_W1_TICKET_TEMPLATE_DOC_ID',
   subject:'Invitation to Attend the First Workshop of MarXcellence 2026',
   qualifiedCol:0,
   sentCol:15,
@@ -58,7 +58,7 @@ const W1 = {
 };
 const W2 = {
   code:'W2',
-  templateId:'1yv7_mmTImS7JA3VM_HN5Ro040Q7CxlwOfjL5y44ROF0',
+  templateId:'PASTE_W2_TICKET_TEMPLATE_DOC_ID',
   subject:'Invitation to Attend the 2nd Workshop of MarXcellence 2026',
   qualifiedCol:16,   // P — needs YES
   sentCol:17,        // Q
@@ -297,9 +297,9 @@ function caseBody(leader, team){
     + '<p>We are pleased to share the <strong>Round 1 Case File</strong> for <strong>Dhaka Bank PLC presents MarXcellence 2026</strong>, Co-Sponsored by Transcom Group and Powered by Vatika Naturals.</p>'
     + '<p>The Round 1 Case File is linked herewith for your reference. We kindly request all participating teams to carefully review the case and follow the submission guidelines outlined in the document.</p>'
     + '<p style="margin-top:18px;"><strong>Round 1 Case:</strong><br>'
-    +   '<a href="https://drive.google.com/drive/folders/1KoqvH3mbATTx0T4XALlODT8DL3p9l9yy?usp=drive_link">https://drive.google.com/drive/folders/1KoqvH3mbATTx0T4XALlODT8DL3p9l9yy?usp=drive_link</a></p>'
+    +   '<a href="PASTE_CASE_FILE_DRIVE_LINK">PASTE_CASE_FILE_DRIVE_LINK</a></p>'
     + '<p><strong>Submission Link:</strong><br>'
-    +   '<a href="https://forms.gle/eqDrHbYrSawhF1AN7">https://forms.gle/eqDrHbYrSawhF1AN7</a></p>'
+    +   '<a href="PASTE_SUBMISSION_FORM_LINK">PASTE_SUBMISSION_FORM_LINK</a></p>'
     + '<p><strong>Submission Deadline:</strong> July 13, 2026, Monday, 11:59 PM (Bangladeshi Time)</p>'
     + '<p style="margin-top:18px;">Should you have any queries or require further clarification, please feel free to reach out to us. We wish you all the very best for Round 1 and look forward to your innovative solutions. (Kindly ignore if you have received the case already)</p>'
     + '<p style="margin-top:18px;">Yours sincerely,<br>'
