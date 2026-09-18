@@ -1,0 +1,510 @@
+/*** MARXCELLENCE 2026 — TICKETS + CHECK-IN + ROUND-1 CASE DROP (W1 + W2 + CASE) ***/
+
+// ============ PER-ACCOUNT CONFIG — the ONLY block you change per account ============
+const ACCOUNT_LABEL   = 'C';    // 'A' main · 'B' nsumibc.marxcellence@gmail.com · 'C' tanjim.eram@northsouth.edu
+const RANGE_START     = 2;      // W2: scan ALL rows (YES-in-P filter selects the semifinalists)
+const RANGE_END       = 0;      // last data row (inclusive); 0 = to the very end
+const SPREADSHEET_ID  = '1tFR_31tifHNXJJbp0d3sVfO5o7FcBCPDuGYvtikXMsw';
+const DAILY_CAP       = 200;   // free gmail: 100 · .edu/Workspace: 1400  (counts RECIPIENTS, incl. bcc)
+const MAX_PER_RUN     = 200;    // max SEND CALLS (teams) per run — LOWER to ~40 if generating PDFs on the fly
+const MAX_GEN_PER_RUN = 30;
+const PDF_LOOKUP      = false;  // false = may generate PDFs · true = send-only, needs ready PDF
+// ===================================================================================
+
+const SHEET_NAME   = 'Sheet1';
+const FOLDER_ID    = '1qOeZJbioe4tK0TDCwnaAWCZOp5bmMRt-';
+const WEBAPP_URL   = 'https://script.google.com/macros/s/AKfycbw4pjQpAuQCZS7ovQ7OubcCK-8rfWA7waoXLXbSGpaMFqI-Lw6AOGyKALyz22mMg-tU9g/exec';
+
+const COL_TEAM = 1, COL_LEADER = 2, COL_EMAIL = 3;
+const COL_M2_EMAIL = 6, COL_M3_EMAIL = 9, COL_M4_EMAIL = 12;   // F, I, L
+const READ_COLS = 26;   // read A..Z
+const TEST_ROW  = 573;
+const CASE_STATUS_COL   = 18;   // R — leader case-drop status
+const MEMBER_STATUS_COL = 26;   // Z — TEMPORARY: members-only run status (delete column after use)
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// ---- WORKSHOP PRESETS ----
+const W1 = {
+  code:'W1',
+  templateId:'1e4QiheM7aQ7mrWYNXSyGhgqgiOrX-_ZU5ozbuURbG1I',
+  subject:'Invitation to Attend the First Workshop of MarXcellence 2026',
+  qualifiedCol:0,
+  sentCol:15,
+  pdfCol:24,
+  body:function(team,leader){ return wrap(leader,
+      '<p>Dear Participant,</p>'
+    + '<p>Greetings from NSU MIBC!</p>'
+    + '<p>We are delighted to invite you to the First Workshop of the 4th edition of the nation\'s largest International Inter-University Digital Marketing Case Competition — <strong>Dhaka Bank PLC presents MarXcellence 2026</strong>, Co-Sponsored by Transcom Group and Powered by Vatika Naturals.</p>'
+    + '<p>This workshop has been designed to provide participants with valuable insights, guidance, and preparation strategies for the competition ahead.</p>'
+    + '<p><strong>Workshop Details:</strong></p>'
+    + '<ul>'
+    +   '<li><strong>Date:</strong> 10th July, 2026</li>'
+    +   '<li><strong>Venue:</strong> NSU Main Auditorium</li>'
+    +   '<li><strong>Reporting Time:</strong> 3:30 PM (Bangladesh Time)</li>'
+    +   '<li><strong>Event Starts:</strong> 4:00 PM (Bangladesh Time)</li>'
+    +   '<li><strong>Gate Entry:</strong> NSU 8 No. Gate</li>'
+    + '</ul>'
+    + '<p><strong>Event Link:</strong> <a href="https://www.facebook.com/share/1Buyq3dKu7/">https://www.facebook.com/share/1Buyq3dKu7/</a></p>'
+    + '<p><strong>Case Drop Details:</strong></p>'
+    + '<ul>'
+    +   '<li><strong>Date:</strong> 10th July, 2026</li>'
+    +   '<li><strong>Time:</strong> 11:59 PM (Bangladesh Time)</li>'
+    +   '<li><strong>Platform:</strong> <a href="http://marxcellence.com">marxcellence.com</a></li>'
+    + '</ul>'
+    + '<p>Please note that all participants must complete a <strong>Ticket Verification Process</strong> before entering the venue. As there will be a verification queue, we strongly encourage you to arrive at your designated reporting time to ensure a smooth check-in and avoid any delays and at least one member must attend. Please remember to carry your <strong>valid University ID card</strong> and the <strong>ticket attached below</strong>.</p>'
+    + '<p>Please feel free to contact us through our hotline numbers for any kind of issues.</p>'
+    + '<p>We look forward to welcoming you to MarXcellence 2026. Wishing you the very best for the competition!</p>'
+    + '<p>Warm regards,<br>NSU MIBC</p>'); }
+};
+const W2 = {
+  code:'W2',
+  templateId:'1yv7_mmTImS7JA3VM_HN5Ro040Q7CxlwOfjL5y44ROF0',
+  subject:'Invitation to Attend the 2nd Workshop of MarXcellence 2026',
+  qualifiedCol:16,   // P — needs YES
+  sentCol:17,        // Q
+  pdfCol:25,         // Y — stores the generated W2 PDF file ID
+  body:function(team,leader){ return caseWrap(
+      '<p>Dear Semi-Finalist,</p>'
+    + '<p>Congratulations on clearing Round 1, The Xploration Phase, of the nation\'s largest international inter-university digital marketing case competition, <strong>Dhaka Bank PLC presents MarXcellence 2026</strong>, Co-Sponsored by Transcom Group and Powered by Vatika Naturals. As you approach the next step toward your victory, we are thrilled to welcome you to the 2nd workshop of MarXcellence 2026.</p>'
+    + '<p>Building on his extensive experience and industry insight, <strong>Kasafaddauza Noman</strong>, Creative Director at Magnito, will be conducting the workshop, challenging your approach to designing and planning an effective marketing campaign.</p>'
+    + '<p><strong>Workshop Details:</strong></p>'
+    + '<ul>'
+    +   '<li><strong>Date:</strong> 18 July, 2026, Saturday (Bangladesh Time)</li>'
+    +   '<li><strong>Time:</strong> 7:00 PM onwards (Bangladesh Time)</li>'
+    +   '<li><strong>Venue:</strong> AUDI 801, NSU Premises</li>'
+    +   '<li><strong>Gate Entry:</strong> NSU 3 No. Gate</li>'
+    + '</ul>'
+    + '<p><strong>Event Link:</strong> <a href="https://www.facebook.com/share/1Buyq3dKu7/">https://www.facebook.com/share/1Buyq3dKu7/</a></p>'
+    + '<p>This workshop has been deliberately constructed to prepare you for the sterner competition ahead. Therefore, we strongly urge you and your teammates to attend this workshop.</p>'
+    + '<p>For assistance, reach out to us through our official page, email, or listed numbers.</p>'
+    + '<p>Best Wishes.</p>'
+    + '<p style="margin-top:4px;"><strong>NSU MIBC</strong></p>'); }
+};
+
+// ---- RUNNERS ----
+function sendW1(){ sendTickets(W1); }
+function sendW2(){ sendTickets(W2); }
+function generateW1(){ generateTickets(W1); }
+function generateW2(){ generateTickets(W2); }
+function testW1(){ testOne(W1); }
+function testW2(){ testOne(W2); }
+function statusW1(){ report(W1); }
+function statusW2(){ report(W2); }
+function checkQuota(){ Logger.log('Recipients left today: ' + MailApp.getRemainingDailyQuota()); }
+function installGenW1Trigger(){ ScriptApp.newTrigger('generateW1').timeBased().everyMinutes(5).create(); Logger.log('['+ACCOUNT_LABEL+'] Generation trigger set.'); }
+function installSendW1Trigger(){ ScriptApp.newTrigger('sendW1').timeBased().everyMinutes(15).create(); Logger.log('['+ACCOUNT_LABEL+'] Send trigger set.'); }
+function stopAllTriggers(){ ScriptApp.getProjectTriggers().forEach(function(t){ ScriptApp.deleteTrigger(t); }); Logger.log('All triggers removed.'); }
+function authorizeOnly(){ DriveApp.getRootFolder(); SpreadsheetApp.getActiveSpreadsheet(); Logger.log('Authorized.'); }
+
+function getSS(){ return SPREADSHEET_ID ? SpreadsheetApp.openById(SPREADSHEET_ID) : SpreadsheetApp.getActiveSpreadsheet(); }
+function stamp(){ return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'MM-dd HH:mm'); }
+function shortErr(e){ var s=(e&&e.message)?e.message:String(e); return s.length>70? s.slice(0,70)+'…':s; }
+
+// Collect valid member emails (F/I/L), skipping blanks, bad formats, and any that equal excludeEmail
+function collectMemberEmails(rowArr, excludeEmail){
+  const cols=[COL_M2_EMAIL, COL_M3_EMAIL, COL_M4_EMAIL];
+  const seen={}; if(excludeEmail) seen[excludeEmail.toString().trim().toLowerCase()]=1;
+  const out=[];
+  for(var k=0;k<cols.length;k++){
+    var e=(rowArr[cols[k]-1]||'').toString().trim();
+    var lc=e.toLowerCase();
+    if(e && EMAIL_RE.test(e) && !seen[lc]){ out.push(e); seen[lc]=1; }
+  }
+  return out;
+}
+
+function wrap(leader, inner){
+  return '<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:auto;color:#1D1616;">'
+    + '<div style="background:#8E1616;padding:22px;text-align:center;border-radius:10px 10px 0 0;"><h1 style="color:#fff;margin:0;font-size:22px;letter-spacing:1px;">MARXCELLENCE 2026</h1></div>'
+    + '<div style="border:1px solid #eee;border-top:none;padding:24px;border-radius:0 0 10px 10px;">'
+    + '<p style="font-size:16px;">Hi <strong>'+leader+'</strong>,</p>' + inner
+    + '<p style="margin-top:18px;">See you there,<br><strong>Team Marxcellence — NSU MIBC</strong></p></div></div>';
+}
+
+// ---- GENERATION ----
+function generateTickets(cfg){
+  const sheet=getSS().getSheetByName(SHEET_NAME);
+  const lastRow=sheet.getLastRow(); if(lastRow<2){ Logger.log('No data.'); return; }
+  const startRow=Math.max(2,RANGE_START||2);
+  const endRow=(RANGE_END&&RANGE_END>0)?Math.min(RANGE_END,lastRow):lastRow;
+  if(startRow>endRow){ Logger.log('Range empty.'); return; }
+  const rows=sheet.getRange(startRow,1,endRow-startRow+1,READ_COLS).getValues();
+  let made=0, have=0, skip=0;
+  for(let i=0;i<rows.length;i++){
+    if(made>=MAX_GEN_PER_RUN){ Logger.log('Gen batch limit hit; continues next run.'); break; }
+    const rowNum=startRow+i;
+    const team=(rows[i][COL_TEAM-1]||'').toString().trim();
+    const leader=(rows[i][COL_LEADER-1]||'').toString().trim();
+    const email=(rows[i][COL_EMAIL-1]||'').toString().trim();
+    const existing=(rows[i][cfg.pdfCol-1]||'').toString().trim();
+    const qual=cfg.qualifiedCol ? (rows[i][cfg.qualifiedCol-1]||'').toString().trim().toUpperCase() : 'YES';
+    if(existing){ have++; continue; }
+    if(cfg.qualifiedCol && qual!=='YES'){ skip++; continue; }
+    if(!team||!email){ skip++; continue; }
+    try{ const id=makeTicketPdf(cfg, team, leader); sheet.getRange(rowNum, cfg.pdfCol).setValue(id); made++; }
+    catch(err){ Logger.log('Row '+rowNum+' ("'+team+'") GEN FAILED: '+err); }
+  }
+  Logger.log('['+ACCOUNT_LABEL+'] '+cfg.code+' generation → made '+made+' | already had '+have+' | skipped '+skip);
+}
+
+function makeTicketPdf(cfg, team, leader){
+  const checkinUrl=WEBAPP_URL+'?team='+encodeURIComponent(team)+'&leader='+encodeURIComponent(leader)+'&w='+encodeURIComponent(cfg.code);
+  const qrBlob=UrlFetchApp.fetch('https://quickchart.io/qr?size=500&margin=2&text='+encodeURIComponent(checkinUrl)).getBlob();
+  const folder=DriveApp.getFolderById(FOLDER_ID);
+  const copyFile=DriveApp.getFileById(cfg.templateId).makeCopy(team+'_'+cfg.code+'_Ticket', folder);
+  const deck=SlidesApp.openById(copyFile.getId());
+  deck.replaceAllText('{{TEAM_NAME}}',team);
+  deck.replaceAllText('{{LEADER_NAME}}',leader);
+  const imgs=deck.getSlides()[0].getImages();
+  let target=null;
+  for(let i=0;i<imgs.length;i++){ const tag=((imgs[i].getTitle()||'')+' '+(imgs[i].getDescription()||'')).toUpperCase(); if(tag.indexOf('QR')>-1){ target=imgs[i]; break; } }
+  if(!target && imgs.length===1) target=imgs[0];
+  if(target) target.replace(qrBlob); else Logger.log('WARNING: no QR image for '+team);
+  deck.saveAndClose();
+  const pdf=DriveApp.getFileById(copyFile.getId()).getAs('application/pdf').setName(team+'_'+cfg.code+'_Ticket.pdf');
+  const pdfFile=folder.createFile(pdf);
+  try{ copyFile.setTrashed(true); }catch(e){}
+  return pdfFile.getId();
+}
+
+// ---- SENDING TICKETS (leader = To, members = Bcc) ----
+function sendTickets(cfg){
+  const sheet=getSS().getSheetByName(SHEET_NAME);
+  const lastRow=sheet.getLastRow(); if(lastRow<2){ Logger.log('No data rows.'); return; }
+  const startRow=Math.max(2, RANGE_START||2);
+  const endRow=(RANGE_END&&RANGE_END>0)?Math.min(RANGE_END,lastRow):lastRow;
+  if(startRow>endRow){ Logger.log('Range empty.'); return; }
+  const rows=sheet.getRange(startRow,1,endRow-startRow+1,READ_COLS).getValues();
+
+  let capLeft=mxCapLeftToday();
+  if(capLeft<=0){ Logger.log('['+ACCOUNT_LABEL+'] Daily cap '+DAILY_CAP+' reached. Rest tomorrow.'); return; }
+  let remaining=MailApp.getRemainingDailyQuota();
+  if(remaining<=0){ Logger.log('['+ACCOUNT_LABEL+'] Gmail quota exhausted for today.'); return; }
+  Logger.log('['+ACCOUNT_LABEL+'] '+cfg.code+' rows '+startRow+'-'+endRow+' | quota '+remaining+' | cap left '+capLeft);
+
+  let teams=0, sent=0, failed=0, already=0, skipped=0, waiting=0, usedRec=0;
+  for(let i=0;i<rows.length;i++){
+    if(teams>=MAX_PER_RUN){ Logger.log('Hit MAX_PER_RUN.'); break; }
+    const rowNum=startRow+i;
+    const team=(rows[i][COL_TEAM-1]||'').toString().trim();
+    const leader=(rows[i][COL_LEADER-1]||'').toString().trim();
+    const email=(rows[i][COL_EMAIL-1]||'').toString().trim();
+    const status=(rows[i][cfg.sentCol-1]||'').toString().trim();
+    const pdfId=(rows[i][cfg.pdfCol-1]||'').toString().trim();
+    const isFailed=/^FAILED/i.test(status);
+    const isDone=(status!=='' && !isFailed);
+    const qual=cfg.qualifiedCol ? (rows[i][cfg.qualifiedCol-1]||'').toString().trim().toUpperCase() : 'YES';
+
+    if(isDone){ already++; continue; }
+    if(cfg.qualifiedCol && qual!=='YES'){ skipped++; continue; }
+    if(!team||!email){ sheet.getRange(rowNum, cfg.sentCol).setValue('FAILED '+stamp()+' ['+ACCOUNT_LABEL+'] missing team/email'); failed++; continue; }
+    if(PDF_LOOKUP && !pdfId){ waiting++; continue; }
+
+    const bcc=collectMemberEmails(rows[i], email);
+    const recips=1+bcc.length;
+    if(usedRec+recips>capLeft){ Logger.log('Would exceed daily cap. Stop; run again tomorrow.'); break; }
+    if(usedRec+recips>remaining){ Logger.log('Would exceed Gmail quota. Stop; run again.'); break; }
+
+    try{
+      buildAndSend(cfg, team, leader, email, pdfId, bcc);
+      sheet.getRange(rowNum, cfg.sentCol).setValue('SENT '+stamp()+' ['+ACCOUNT_LABEL+']'+(bcc.length?(' +'+bcc.length+'bcc'):''));
+      usedRec+=recips; mxBumpToday(recips); teams++; sent++;
+    }catch(err){
+      sheet.getRange(rowNum, cfg.sentCol).setValue('FAILED '+stamp()+' ['+ACCOUNT_LABEL+'] '+shortErr(err));
+      failed++; Logger.log('Row '+rowNum+' ("'+team+'") SEND FAILED: '+err);
+    }
+  }
+  Logger.log('['+ACCOUNT_LABEL+'] '+cfg.code+' done. Sent '+sent+' teams ('+usedRec+' recipients) | failed '+failed+' | already '+already+' | not-qualified '+skipped+' | waiting-for-PDF '+waiting);
+}
+
+function buildAndSend(cfg, team, leader, email, pdfId, bcc){
+  let pdfBlob;
+  if(pdfId){ pdfBlob = DriveApp.getFileById(pdfId).getBlob().setName(team+'_'+cfg.code+'_Ticket.pdf'); }
+  else if(PDF_LOOKUP){ throw new Error('No pre-generated PDF yet for this row'); }
+  else { const id = makeTicketPdf(cfg, team, leader); pdfBlob = DriveApp.getFileById(id).getBlob().setName(team+'_'+cfg.code+'_Ticket.pdf'); }
+  var opts={ htmlBody:cfg.body(team,leader), attachments:[pdfBlob], name:'Marxcellence 2026' };
+  if(bcc && bcc.length) opts.bcc=bcc.join(',');
+  GmailApp.sendEmail(email, cfg.subject, 'Your Marxcellence 2026 ticket is attached.', opts);
+}
+
+function testOne(cfg){
+  const sheet=getSS().getSheetByName(SHEET_NAME);
+  const r=sheet.getRange(TEST_ROW,1,1,READ_COLS).getValues()[0];
+  const team=(r[COL_TEAM-1]||'').toString().trim(), leader=(r[COL_LEADER-1]||'').toString().trim(), email=(r[COL_EMAIL-1]||'').toString().trim();
+  const pdfId=(r[cfg.pdfCol-1]||'').toString().trim();
+  if(!team||!email){ Logger.log('Test row missing team/email.'); return; }
+  buildAndSend(cfg, team, leader, email, pdfId);   // test = leader only, no bcc
+  Logger.log('TEST '+cfg.code+' sent to '+email+' from ['+ACCOUNT_LABEL+'] (no bcc on tests).');
+}
+
+function report(cfg){
+  const sheet=getSS().getSheetByName(SHEET_NAME);
+  const lastRow=sheet.getLastRow(); if(lastRow<2){ Logger.log('No data.'); return; }
+  const startRow=Math.max(2, RANGE_START||2);
+  const endRow=(RANGE_END&&RANGE_END>0)?Math.min(RANGE_END,lastRow):lastRow;
+  const vals=sheet.getRange(startRow,1,endRow-startRow+1,READ_COLS).getValues();
+  let done=0, failed=0, todo=0, pdfs=0;
+  vals.forEach(function(r){
+    var s=(r[cfg.sentCol-1]||'').toString().trim();
+    if((r[cfg.pdfCol-1]||'').toString().trim()) pdfs++;
+    if(/^FAILED/i.test(s)) failed++; else if(s!=='') done++; else todo++;
+  });
+  Logger.log('['+ACCOUNT_LABEL+'] '+cfg.code+' → PDFs '+pdfs+' | SENT '+done+' | FAILED '+failed+' | not-yet '+todo+' | quota left '+MailApp.getRemainingDailyQuota());
+}
+
+function mxCapLeftToday(){
+  const p=PropertiesService.getScriptProperties();
+  const today=Utilities.formatDate(new Date(), Session.getScriptTimeZone(),'yyyy-MM-dd');
+  if(p.getProperty('mxDay')!==today){ p.setProperty('mxDay',today); p.setProperty('mxCount','0'); }
+  return DAILY_CAP - parseInt(p.getProperty('mxCount')||'0',10);
+}
+function mxBumpToday(n){
+  n = n || 1;
+  const p=PropertiesService.getScriptProperties();
+  const today=Utilities.formatDate(new Date(), Session.getScriptTimeZone(),'yyyy-MM-dd');
+  if(p.getProperty('mxDay')!==today){ p.setProperty('mxDay',today); p.setProperty('mxCount',String(n)); }
+  else p.setProperty('mxCount', String(parseInt(p.getProperty('mxCount')||'0',10)+n));
+}
+
+// ==================================================================================
+// ============ ROUND 1 CASE-DROP → Column R (leader+bcc) & Column Z (members-only) ==
+// ==================================================================================
+const CASE = {
+  code:'R1CASE',
+  subject:'Round 1 Case File – Dhaka Bank PLC presents MarXcellence 2026',
+  body:function(team,leader){ return caseBody(leader, team); }
+};
+
+// ---- runners ----
+function sendCaseR1(){ sendCase(CASE); }
+function sendMembersR1(){ sendCaseToMembers(CASE); }
+function testCaseR1(){ testCaseOne(CASE); }
+function statusCaseR1(){ reportCase(CASE); }
+function statusMembersR1(){ reportMembers(); }
+function scanBouncesR1(){ scanBounces(CASE); }
+
+function caseWrap(inner){
+  return '<div style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:auto;color:#1D1616;">'
+    + '<div style="background:#8E1616;padding:22px;text-align:center;border-radius:10px 10px 0 0;"><h1 style="color:#fff;margin:0;font-size:22px;letter-spacing:1px;">MARXCELLENCE 2026</h1></div>'
+    + '<div style="border:1px solid #eee;border-top:none;padding:24px;border-radius:0 0 10px 10px;font-size:15px;line-height:1.6;">'
+    + inner + '</div></div>';
+}
+
+function caseBody(leader, team){
+  return caseWrap(
+      '<p>Dear Participants,</p>'
+    + '<p>Greetings from the Marketing and International Business Club of North South University (NSU MIBC)!</p>'
+    + '<p>We are pleased to share the <strong>Round 1 Case File</strong> for <strong>Dhaka Bank PLC presents MarXcellence 2026</strong>, Co-Sponsored by Transcom Group and Powered by Vatika Naturals.</p>'
+    + '<p>The Round 1 Case File is linked herewith for your reference. We kindly request all participating teams to carefully review the case and follow the submission guidelines outlined in the document.</p>'
+    + '<p style="margin-top:18px;"><strong>Round 1 Case:</strong><br>'
+    +   '<a href="https://drive.google.com/drive/folders/1KoqvH3mbATTx0T4XALlODT8DL3p9l9yy?usp=drive_link">https://drive.google.com/drive/folders/1KoqvH3mbATTx0T4XALlODT8DL3p9l9yy?usp=drive_link</a></p>'
+    + '<p><strong>Submission Link:</strong><br>'
+    +   '<a href="https://forms.gle/eqDrHbYrSawhF1AN7">https://forms.gle/eqDrHbYrSawhF1AN7</a></p>'
+    + '<p><strong>Submission Deadline:</strong> July 13, 2026, Monday, 11:59 PM (Bangladeshi Time)</p>'
+    + '<p style="margin-top:18px;">Should you have any queries or require further clarification, please feel free to reach out to us. We wish you all the very best for Round 1 and look forward to your innovative solutions. (Kindly ignore if you have received the case already)</p>'
+    + '<p style="margin-top:18px;">Yours sincerely,<br>'
+    +   '<strong>The Executive Body Panel</strong><br>'
+    +   'Marketing and International Business Club<br>'
+    +   'North South University</p>');
+}
+
+// ---- LEADER + MEMBERS(bcc) → Column R ----
+function sendCase(cfg){
+  const sheet=getSS().getSheetByName(SHEET_NAME);
+  const lastRow=sheet.getLastRow(); if(lastRow<2){ Logger.log('No data rows.'); return; }
+  const startRow=Math.max(2, RANGE_START||2);
+  const endRow=(RANGE_END&&RANGE_END>0)?Math.min(RANGE_END,lastRow):lastRow;
+  if(startRow>endRow){ Logger.log('Range empty.'); return; }
+  const rows=sheet.getRange(startRow,1,endRow-startRow+1,READ_COLS).getValues();
+
+  let capLeft=mxCapLeftToday();
+  if(capLeft<=0){ Logger.log('['+ACCOUNT_LABEL+'] Daily cap '+DAILY_CAP+' reached. Rest tomorrow.'); return; }
+  let remaining=MailApp.getRemainingDailyQuota();
+  if(remaining<=0){ Logger.log('['+ACCOUNT_LABEL+'] Gmail quota exhausted today.'); return; }
+  Logger.log('['+ACCOUNT_LABEL+'] CASE rows '+startRow+'-'+endRow+' | quota '+remaining+' | cap left '+capLeft);
+
+  let teams=0, sent=0, failed=0, bad=0, already=0, usedRec=0;
+  for(let i=0;i<rows.length;i++){
+    if(teams>=MAX_PER_RUN){ Logger.log('Hit MAX_PER_RUN.'); break; }
+    const rowNum=startRow+i;
+    const team=(rows[i][COL_TEAM-1]||'').toString().trim();
+    const leader=(rows[i][COL_LEADER-1]||'').toString().trim();
+    const email=(rows[i][COL_EMAIL-1]||'').toString().trim();
+    const status=(rows[i][CASE_STATUS_COL-1]||'').toString().trim();
+    const isBad=/^(FAILED|BOUNCED)/i.test(status);
+    if(status!=='' && !isBad){ already++; continue; }
+    if(!email){ sheet.getRange(rowNum,CASE_STATUS_COL).setValue('FAILED '+stamp()+' ['+ACCOUNT_LABEL+'] no email'); bad++; continue; }
+    if(!EMAIL_RE.test(email)){ sheet.getRange(rowNum,CASE_STATUS_COL).setValue('FAILED '+stamp()+' ['+ACCOUNT_LABEL+'] bad format: '+email); bad++; continue; }
+
+    const bcc=collectMemberEmails(rows[i], email);
+    const recips=1+bcc.length;
+    if(usedRec+recips>capLeft){ Logger.log('Would exceed daily cap. Stop; run again tomorrow.'); break; }
+    if(usedRec+recips>remaining){ Logger.log('Would exceed Gmail quota. Stop; run again.'); break; }
+
+    try{
+      var opts={ htmlBody:cfg.body(team,leader), name:'MarXcellence 2026 — NSU MIBC' };
+      if(bcc.length) opts.bcc=bcc.join(',');
+      GmailApp.sendEmail(email, cfg.subject, 'Please view this email in HTML.', opts);
+      sheet.getRange(rowNum,CASE_STATUS_COL).setValue('SENT '+stamp()+' ['+ACCOUNT_LABEL+']'+(bcc.length?(' +'+bcc.length+'bcc'):''));
+      usedRec+=recips; mxBumpToday(recips); teams++; sent++;
+    }catch(err){
+      sheet.getRange(rowNum,CASE_STATUS_COL).setValue('FAILED '+stamp()+' ['+ACCOUNT_LABEL+'] '+shortErr(err));
+      failed++; Logger.log('Row '+rowNum+' ("'+team+'") CASE FAILED: '+err);
+    }
+  }
+  Logger.log('['+ACCOUNT_LABEL+'] CASE done. Sent '+sent+' teams ('+usedRec+' recipients) | send-failed '+failed+' | bad-address '+bad+' | already '+already);
+}
+
+// ---- MEMBERS ONLY (leader excluded) → Column Z. Skips teams already Bcc'd in Column R. ----
+function sendCaseToMembers(cfg){
+  const sheet=getSS().getSheetByName(SHEET_NAME);
+  const lastRow=sheet.getLastRow(); if(lastRow<2){ Logger.log('No data rows.'); return; }
+  const startRow=Math.max(2, RANGE_START||2);
+  const endRow=(RANGE_END&&RANGE_END>0)?Math.min(RANGE_END,lastRow):lastRow;
+  if(startRow>endRow){ Logger.log('Range empty.'); return; }
+  const rows=sheet.getRange(startRow,1,endRow-startRow+1,READ_COLS).getValues();
+
+  let capLeft=mxCapLeftToday();
+  if(capLeft<=0){ Logger.log('['+ACCOUNT_LABEL+'] Daily cap reached. Rest tomorrow.'); return; }
+  let remaining=MailApp.getRemainingDailyQuota();
+  if(remaining<=0){ Logger.log('['+ACCOUNT_LABEL+'] Gmail quota exhausted today.'); return; }
+  Logger.log('['+ACCOUNT_LABEL+'] MEMBERS-ONLY rows '+startRow+'-'+endRow+' | quota '+remaining+' | cap left '+capLeft);
+
+  let teams=0, sent=0, failed=0, none=0, already=0, usedRec=0;
+  for(let i=0;i<rows.length;i++){
+    if(teams>=MAX_PER_RUN){ Logger.log('Hit MAX_PER_RUN.'); break; }
+    const rowNum=startRow+i;
+    const team=(rows[i][COL_TEAM-1]||'').toString().trim();
+    const leader=(rows[i][COL_LEADER-1]||'').toString().trim();
+    const leaderEmail=(rows[i][COL_EMAIL-1]||'').toString().trim();
+    const zstatus=(rows[i][MEMBER_STATUS_COL-1]||'').toString().trim();
+    const rstatus=(rows[i][CASE_STATUS_COL-1]||'').toString();
+    const zBad=/^(FAILED|BOUNCED)/i.test(zstatus);
+
+    if(zstatus!=='' && !zBad){ already++; continue; }
+    if(/bcc/i.test(rstatus)){ already++; continue; }
+
+    const members=collectMemberEmails(rows[i], leaderEmail);
+    if(members.length===0){ sheet.getRange(rowNum,MEMBER_STATUS_COL).setValue('NO MEMBERS '+stamp()+' ['+ACCOUNT_LABEL+']'); none++; continue; }
+
+    const recips=members.length;
+    if(usedRec+recips>capLeft){ Logger.log('Would exceed daily cap. Stop.'); break; }
+    if(usedRec+recips>remaining){ Logger.log('Would exceed Gmail quota. Stop.'); break; }
+
+    try{
+      var to=members[0], bcc=members.slice(1);
+      var opts={ htmlBody:cfg.body(team,leader), name:'MarXcellence 2026 — NSU MIBC' };
+      if(bcc.length) opts.bcc=bcc.join(',');
+      GmailApp.sendEmail(to, cfg.subject, 'Please view this email in HTML.', opts);
+      sheet.getRange(rowNum,MEMBER_STATUS_COL).setValue('SENT '+stamp()+' ['+ACCOUNT_LABEL+'] '+members.length+'mem');
+      usedRec+=recips; mxBumpToday(recips); teams++; sent++;
+    }catch(err){
+      sheet.getRange(rowNum,MEMBER_STATUS_COL).setValue('FAILED '+stamp()+' ['+ACCOUNT_LABEL+'] '+shortErr(err));
+      failed++; Logger.log('Row '+rowNum+' ("'+team+'") MEMBERS FAILED: '+err);
+    }
+  }
+  Logger.log('['+ACCOUNT_LABEL+'] MEMBERS-ONLY done. Sent '+sent+' teams ('+usedRec+' recipients) | failed '+failed+' | no-members '+none+' | already '+already);
+}
+
+function testCaseOne(cfg){
+  const sheet=getSS().getSheetByName(SHEET_NAME);
+  const r=sheet.getRange(TEST_ROW,1,1,READ_COLS).getValues()[0];
+  const team=(r[COL_TEAM-1]||'').toString().trim(), leader=(r[COL_LEADER-1]||'').toString().trim(), email=(r[COL_EMAIL-1]||'').toString().trim();
+  if(!email){ Logger.log('Test row has no email.'); return; }
+  GmailApp.sendEmail(email, cfg.subject, 'Please view this email in HTML.', { htmlBody:cfg.body(team,leader), name:'MarXcellence 2026 — NSU MIBC' });
+  Logger.log('TEST case-drop sent to '+email+' from ['+ACCOUNT_LABEL+'] (leader only, no bcc).');
+}
+
+function reportCase(cfg){
+  const sheet=getSS().getSheetByName(SHEET_NAME);
+  const lastRow=sheet.getLastRow(); if(lastRow<2){ Logger.log('No data.'); return; }
+  const startRow=Math.max(2, RANGE_START||2);
+  const endRow=(RANGE_END&&RANGE_END>0)?Math.min(RANGE_END,lastRow):lastRow;
+  const vals=sheet.getRange(startRow,1,endRow-startRow+1,READ_COLS).getValues();
+  let done=0, failed=0, bounced=0, todo=0;
+  vals.forEach(function(r){ var s=(r[CASE_STATUS_COL-1]||'').toString().trim();
+    if(/^BOUNCED/i.test(s)) bounced++; else if(/^FAILED/i.test(s)) failed++; else if(s!=='') done++; else todo++; });
+  Logger.log('['+ACCOUNT_LABEL+'] CASE (R) → SENT '+done+' | FAILED '+failed+' | BOUNCED '+bounced+' | not-yet '+todo+' | quota left '+MailApp.getRemainingDailyQuota());
+}
+
+function reportMembers(){
+  const sheet=getSS().getSheetByName(SHEET_NAME);
+  const lastRow=sheet.getLastRow(); if(lastRow<2){ Logger.log('No data.'); return; }
+  const startRow=Math.max(2, RANGE_START||2);
+  const endRow=(RANGE_END&&RANGE_END>0)?Math.min(RANGE_END,lastRow):lastRow;
+  const vals=sheet.getRange(startRow,1,endRow-startRow+1,READ_COLS).getValues();
+  let done=0, failed=0, none=0, todo=0;
+  vals.forEach(function(r){ var s=(r[MEMBER_STATUS_COL-1]||'').toString().trim();
+    if(/^FAILED/i.test(s)) failed++; else if(/^NO MEMBERS/i.test(s)) none++; else if(s!=='') done++; else todo++; });
+  Logger.log('['+ACCOUNT_LABEL+'] MEMBERS (Z) → SENT '+done+' | FAILED '+failed+' | NO-MEMBERS '+none+' | not-yet '+todo);
+}
+
+function scanBounces(cfg){
+  const sheet=getSS().getSheetByName(SHEET_NAME);
+  const lastRow=sheet.getLastRow(); if(lastRow<2){ Logger.log('No data.'); return; }
+  const startRow=Math.max(2, RANGE_START||2);
+  const endRow=(RANGE_END&&RANGE_END>0)?Math.min(RANGE_END,lastRow):lastRow;
+  const rows=sheet.getRange(startRow,1,endRow-startRow+1,READ_COLS).getValues();
+  const map={};
+  for(let i=0;i<rows.length;i++){
+    const email=(rows[i][COL_EMAIL-1]||'').toString().trim().toLowerCase();
+    const status=(rows[i][CASE_STATUS_COL-1]||'').toString().trim();
+    if(email && /^SENT/i.test(status)) map[email]=startRow+i;
+  }
+  const threads=GmailApp.search('(from:mailer-daemon OR subject:"Delivery Status Notification" OR subject:"Undelivered" OR subject:"failure") newer_than:2d', 0, 150);
+  const RE=/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
+  let marked=0;
+  for(let t=0;t<threads.length;t++){
+    const msgs=threads[t].getMessages();
+    for(let m=0;m<msgs.length;m++){
+      const found=(msgs[m].getPlainBody()||'').match(RE)||[];
+      for(let f=0;f<found.length;f++){
+        const a=found[f].toLowerCase();
+        if(map[a]!==undefined){ sheet.getRange(map[a],CASE_STATUS_COL).setValue('BOUNCED '+stamp()+' ['+ACCOUNT_LABEL+']'); delete map[a]; marked++; }
+      }
+    }
+  }
+  Logger.log('['+ACCOUNT_LABEL+'] Bounce scan: marked '+marked+' row(s) BOUNCED.');
+}
+
+// ---- SECURE CHECK-IN (unchanged; only on the MAIN account) ----
+function doGet(e){
+  const team=((e&&e.parameter.team)||'').toString().trim();
+  const leader=((e&&e.parameter.leader)||'').toString().trim();
+  const w=((e&&e.parameter.w)||'W1').toString().trim();
+  return HtmlService.createHtmlOutput(pageHtml(team,leader,w,team?'':'Invalid ticket'))
+    .addMetaTag('viewport','width=device-width, initial-scale=1').setTitle('Marxcellence Check-in');
+}
+function checkIn(team, leader, w){
+  team=(team||'').toString().trim(); if(!team) return {ok:false,msg:'noteam'};
+  w=(w||'W1').toString().trim();
+  const ss=getSS(); const tabName=w+' ATTDN';
+  let tab=ss.getSheetByName(tabName);
+  if(!tab){ tab=ss.insertSheet(tabName); tab.appendRow(['Team Name','Leader Name','Checked In At']); }
+  const last=tab.getLastRow();
+  if(last>=2){ const ex=tab.getRange(2,1,last-1,1).getValues();
+    for(let i=0;i<ex.length;i++){ if((ex[i][0]||'').toString().trim().toLowerCase()===team.toLowerCase()) return {ok:true,already:true}; } }
+  tab.appendRow([team, leader, new Date()]);
+  return {ok:true, already:false};
+}
+function pageHtml(team, leader, w, errTitle){
+  const label=(w==='W1')?'Workshop 1':(w==='W2')?'Workshop 2':(w||'');
+  const T=JSON.stringify(team),L=JSON.stringify(leader),W=JSON.stringify(w),ERR=JSON.stringify(errTitle);
+  return `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#1D1616;color:#EEEEEE;display:flex;min-height:100vh;align-items:center;justify-content:center;text-align:center;}
+.card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:34px 26px;max-width:340px;width:86%;}
+h1{margin:0 0 8px;font-size:23px;}p{font-size:15px;line-height:1.5;margin:6px 0;}.team{color:#D84040;font-weight:bold;}
+.tag{margin-top:18px;font-size:11px;color:#8E8E99;letter-spacing:2px;}.ok{color:#1f9d55;}.bad{color:#D84040;}
+</style></head><body><div class="card">
+<div id="status"><h1>Checking…</h1><p class="team"></p></div>
+<div class="tag">MARXCELLENCE 2026 · ${label}</div></div>
+<script>
+var TEAM=${T},LEADER=${L},W=${W},ERR=${ERR};
+function $(i){return document.getElementById(i);}
+function setTeams(){var e=document.getElementsByClassName('team');for(var i=0;i<e.length;i++)e[i].textContent=TEAM;}
+function show(h){$('status').innerHTML=h;setTeams();}
+function onResult(r){if(r&&r.ok){if(r.already)show('<h1 class="ok">Already checked in</h1><p>'+TEAM+' was already marked present.</p>');else show('<h1 class="ok">Checked in ✓</h1><p>'+TEAM+' is now marked present.</p>');}else show('<h1 class="bad">Could not check in</h1><p>Please try again.</p>');}
+function onFail(){show('<h1 class="bad">Network error</h1><p>Please scan again.</p>');}
+(function(){setTeams();if(ERR){show('<h1 class="bad">'+ERR+'</h1><p>This QR code is not valid.</p>');return;}google.script.run.withSuccessHandler(onResult).withFailureHandler(onFail).checkIn(TEAM,LEADER,W);})();
+</script></body></html>`;
+}
