@@ -9,7 +9,7 @@ const DAILY_CAP       = 200;   // free gmail: 100 · .edu/Workspace: 1400  (coun
 const MAX_PER_RUN     = 200;    // max SEND CALLS (teams) per run — LOWER to ~40 if generating PDFs on the fly
 const MAX_GEN_PER_RUN = 30;
 const PDF_LOOKUP      = false;  // false = may generate PDFs · true = send-only, needs ready PDF
-// ===================================================================================
+// =====================================================================================
 
 const SHEET_NAME   = 'Sheet1';
 const FOLDER_ID    = '1qOeZJbioe4tK0TDCwnaAWCZOp5bmMRt-';
